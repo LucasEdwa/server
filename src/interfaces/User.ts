@@ -9,6 +9,7 @@ export interface User {
   registered: number; 
   last_login?: number; 
   force_logout: number;
+  user_type?: UserType; 
 }
 
 // User details interface matching the user_details table
@@ -42,6 +43,7 @@ export interface CreateUserInput {
   country?: string;
   postal_code?: string;
   phone?: string;
+  user_type?: UserType; 
 }
 
 // User login interface
@@ -68,7 +70,6 @@ export interface UpdatePasswordInput {
   new_password: string;
   confirm_password: string;
 }
-
 
 // API Response interfaces
 export interface AuthResponse {
@@ -102,7 +103,7 @@ export enum UserStatus {
 export enum UserType {
   GUEST = 'guest',
   USER = 'user',
-  ADMIN = 'admin'
+  ADMIN = 'admin',
 }
 
 // JWT Payload interface

@@ -102,7 +102,7 @@ router.post('/users/:id/force-logout', async (req: Request, res: Response) => {
 });
 
 // Get all users (admin only) - with pagination
-router.get('/users*=', async (req: Request, res: Response) => {
+router.get('/users', async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
@@ -116,6 +116,5 @@ router.get('/users*=', async (req: Request, res: Response) => {
     errorResponse(res, 500, 'Internal server error');
   }
 });
-
 
 export default router;

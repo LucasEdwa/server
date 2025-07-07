@@ -8,22 +8,41 @@ import { CreateUserInput,
 
 // CRUD Operations for Users
 export const createUser = async (userData: CreateUserInput): Promise<UserWithDetails> => {
-  const { email, password, first_name, last_name, address, city, state, country, postal_code, phone } = userData;
+  const { email, password, first_name, last_name, address, city, state, country, postal_code, phone, user_type } = userData;
   
   // Hash password with higher salt rounds for better security
   const hashedPassword = await bcrypt.hash(password, 14);
   const currentTimestamp = Math.floor(Date.now() / 1000);
+  const userTypeValue = user_type || 'user'; // Default to 'user' if not specified
   
   const connection = await db.getConnection();
   
   try {
     await connection.beginTransaction();
     
-    // Insert user
-    const [userResult] = await connection.query(
-      'INSERT INTO users (email, password, registered) VALUES (?, ?, ?)',
-      [email, hashedPassword, currentTimestamp]
-    ) as any;
+    // Check if user_type column exists before using it
+    const [columns] = await connection.query(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_NAME = 'users' 
+      AND COLUMN_NAME = 'user_type' 
+      AND TABLE_SCHEMA = DATABASE()
+    `) as any;
+    
+    let userResult;
+    if (columns.length > 0) {
+      // user_type column exists, use it
+      [userResult] = await connection.query(
+        'INSERT INTO users (email, password, registered, user_type) VALUES (?, ?, ?, ?)',
+        [email, hashedPassword, currentTimestamp, userTypeValue]
+      ) as any;
+    } else {
+      // user_type column doesn't exist, create user without it
+      [userResult] = await connection.query(
+        'INSERT INTO users (email, password, registered) VALUES (?, ?, ?)',
+        [email, hashedPassword, currentTimestamp]
+      ) as any;
+    }
     
     const userId = userResult.insertId;
     
@@ -52,14 +71,39 @@ export const getUserById = async (id: number): Promise<UserWithDetails> => {
   }
 
   try {
-    const [rows] = await db.query(`
-      SELECT 
-        u.id, u.email, u.status, u.verified, u.resettable, u.registered, u.last_login, u.force_logout,
-        ud.first_name, ud.last_name, ud.address, ud.city, ud.state, ud.country, ud.postal_code, ud.phone
-      FROM users u
-      LEFT JOIN user_details ud ON u.id = ud.user_id
-      WHERE u.id = ?
-    `, [id]) as any;
+    // Check if user_type column exists
+    const [columns] = await db.query(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_NAME = 'users' 
+      AND COLUMN_NAME = 'user_type' 
+      AND TABLE_SCHEMA = DATABASE()
+    `) as any;
+    
+    let query;
+    if (columns.length > 0) {
+      // user_type column exists
+      query = `
+        SELECT 
+          u.id, u.email, u.status, u.verified, u.resettable, u.registered, u.last_login, u.force_logout, u.user_type,
+          ud.first_name, ud.last_name, ud.address, ud.city, ud.state, ud.country, ud.postal_code, ud.phone
+        FROM users u
+        LEFT JOIN user_details ud ON u.id = ud.user_id
+        WHERE u.id = ?
+      `;
+    } else {
+      // user_type column doesn't exist
+      query = `
+        SELECT 
+          u.id, u.email, u.status, u.verified, u.resettable, u.registered, u.last_login, u.force_logout,
+          ud.first_name, ud.last_name, ud.address, ud.city, ud.state, ud.country, ud.postal_code, ud.phone
+        FROM users u
+        LEFT JOIN user_details ud ON u.id = ud.user_id
+        WHERE u.id = ?
+      `;
+    }
+    
+    const [rows] = await db.query(query, [id]) as any;
     
     if (!rows.length) {
       throw new Error('User not found');
@@ -76,6 +120,7 @@ export const getUserById = async (id: number): Promise<UserWithDetails> => {
       registered: row.registered,
       last_login: row.last_login,
       force_logout: row.force_logout,
+      user_type: row.user_type || 'guest', 
       details: row.first_name ? {
         id: row.id,
         user_id: row.id,
@@ -186,7 +231,7 @@ export const getAllUsers = async (page: number = 1, limit: number = 10): Promise
   try {
     const [rows] = await db.query(`
       SELECT 
-        u.id, u.email, u.status, u.verified, u.resettable, u.registered, u.last_login, u.force_logout,
+        u.id, u.email, u.status, u.verified, u.resettable, u.registered, u.last_login, u.force_logout, u.user_type,
         ud.first_name, ud.last_name, ud.address, ud.city, ud.state, ud.country, ud.postal_code, ud.phone
       FROM users u
       LEFT JOIN user_details ud ON u.id = ud.user_id
@@ -204,6 +249,7 @@ export const getAllUsers = async (page: number = 1, limit: number = 10): Promise
       registered: row.registered,
       last_login: row.last_login,
       force_logout: row.force_logout,
+      user_type: row.user_type,
       details: row.first_name ? {
         id: row.id,
         user_id: row.id,

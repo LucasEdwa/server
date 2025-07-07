@@ -151,7 +151,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
 // Admin only middleware
 export const requireAdmin = (req: Request, res: Response, next: NextFunction): void => {
   try {
-    if (!req.user || req.user.status < 2) { // Assuming status 2+ is admin
+    if (!req.user || (req.user.user_type !== 'admin' )) {
       res.status(403).json({
         success: false,
         message: 'Admin access required'
@@ -167,3 +167,4 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction): v
     });
   }
 };
+

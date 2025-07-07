@@ -1,4 +1,5 @@
 import { db } from '../db/connection';
+
 // Users main table
 export const createUsersTable = async (): Promise<void> => {
   await db.query(`
@@ -12,6 +13,7 @@ export const createUsersTable = async (): Promise<void> => {
       registered INT(10) UNSIGNED NOT NULL DEFAULT 0,
       last_login INT(10) UNSIGNED DEFAULT NULL,
       force_logout MEDIUMINT(7) UNSIGNED NOT NULL DEFAULT '0',
+      user_type ENUM('guest', 'user', 'super_admin') NOT NULL DEFAULT 'user',
       UNIQUE KEY id (id),
       UNIQUE KEY email (email)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -95,6 +97,35 @@ export const createUserDetailsTable = async (): Promise<void> => {
   `);
 };
 
+// Migration function to add user_type column to existing table
+export const addUserTypeColumn = async (): Promise<void> => {
+  try {
+    // Check if column already exists
+    const [columns] = await db.query(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_NAME = 'users' 
+      AND COLUMN_NAME = 'user_type' 
+      AND TABLE_SCHEMA = DATABASE()
+    `) as any;
+
+    if (columns.length === 0) {
+      // Column doesn't exist, add it
+      await db.query(`
+        ALTER TABLE users 
+        ADD COLUMN user_type ENUM('user', 'admin', 'super_admin') NOT NULL DEFAULT 'user' 
+        AFTER force_logout
+      `);
+      console.log('user_type column added successfully');
+    } else {
+      console.log('user_type column already exists');
+    }
+  } catch (error) {
+    console.error('Error adding user_type column:', error);
+    throw error;
+  }
+};
+
 // Initialize all user-related tables
 export const initializeUserTables = async (): Promise<void> => {
   try {
@@ -104,6 +135,10 @@ export const initializeUserTables = async (): Promise<void> => {
     await createUsersRememberedTable();
     await createUsersResetsTable();
     await createUsersThrottlingTable();
+    
+    // Add user_type column if it doesn't exist
+    await addUserTypeColumn();
+    
     console.log('All user tables initialized successfully');
   } catch (error) {
     console.error('Error initializing user tables:', error);

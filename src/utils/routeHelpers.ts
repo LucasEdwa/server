@@ -57,14 +57,14 @@ export const sanitizeEmail = (email: string): string => {
 export const sanitizeUserInput = (input: any): any => {
   return {
     ...input,
-    email: input.email ? sanitizeEmail(input.email) : undefined,
-    first_name: input.first_name ? sanitizeString(input.first_name) : undefined,
-    last_name: input.last_name ? sanitizeString(input.last_name) : undefined,
-    address: input.address ? sanitizeString(input.address) : undefined,
-    city: input.city ? sanitizeString(input.city) : undefined,
-    state: input.state ? sanitizeString(input.state) : undefined,
-    country: input.country ? sanitizeString(input.country) : undefined,
-    postal_code: input.postal_code ? sanitizeString(input.postal_code) : undefined,
-    phone: input.phone ? sanitizeString(input.phone) : undefined
+    email: input.email ? sanitizeEmail(input.email).trim() : undefined,
+    first_name: input.first_name ? sanitizeString(input.first_name).trim() : undefined,
+    last_name: input.last_name ? sanitizeString(input.last_name).trim() : undefined,
+    address: input.address ? sanitizeString(input.address).trim() : undefined,
+    city: input.city ? sanitizeString(input.city).trim() : undefined,
+    state: input.state ? sanitizeString(input.state).trim() : undefined,
+    country: input.country ? sanitizeString(input.country.trim()) : undefined,
+    postal_code: input.postal_code ? sanitizeString(input.postal_code).trim() : undefined,
+    phone: input.phone ? sanitizeString(input.phone).trim() : undefined
   };
 };

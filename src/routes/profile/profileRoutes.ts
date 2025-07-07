@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import * as userController from '../../controllers/userController';
 import { UpdateUserInput } from '../../interfaces/User';
 import { authenticateToken } from '../../middleware/auth';
+import { sanitizeUserInput } from '../../utils/routeHelpers';
 
 const router = Router();
 
@@ -83,16 +84,8 @@ router.put('/me', authenticateToken, async (req: Request, res: Response) => {
     if (!req.user?.id) return errorResponse(res, 401, 'Unauthorized');
 
     // Validate and sanitize input
-    const updateData: UpdateUserInput = {};
-
-    if (req.body.first_name) updateData.first_name = req.body.first_name.trim();
-    if (req.body.last_name) updateData.last_name = req.body.last_name.trim();
-    if (req.body.address) updateData.address = req.body.address.trim();
-    if (req.body.city) updateData.city = req.body.city.trim();
-    if (req.body.state) updateData.state = req.body.state.trim();
-    if (req.body.country) updateData.country = req.body.country.trim();
-    if (req.body.postal_code) updateData.postal_code = req.body.postal_code.trim();
-    if (req.body.phone) updateData.phone = req.body.phone.trim();
+    const updateData: UpdateUserInput = sanitizeUserInput(req.body);
+    
 
     const updatedUser = await userController.updateUser(req.user.id, updateData);
     const { password: _, ...userResponse } = updatedUser;
