@@ -3,11 +3,11 @@ export interface User {
   id: number;
   email: string;
   password: string;
-  status: number; // 0 = inactive, 1 = active, etc.
+  status: number; 
   verified: boolean;
   resettable: boolean;
-  registered: number; // Unix timestamp
-  last_login?: number; // Unix timestamp, optional
+  registered: number; 
+  last_login?: number; 
   force_logout: number;
 }
 
