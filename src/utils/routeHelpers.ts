@@ -52,3 +52,19 @@ export const sanitizeString = (input: string): string => {
 export const sanitizeEmail = (email: string): string => {
   return email ? email.toLowerCase().trim() : '';
 };
+
+// Comprehensive user input sanitization
+export const sanitizeUserInput = (input: any): any => {
+  return {
+    ...input,
+    email: input.email ? sanitizeEmail(input.email) : undefined,
+    first_name: input.first_name ? sanitizeString(input.first_name) : undefined,
+    last_name: input.last_name ? sanitizeString(input.last_name) : undefined,
+    address: input.address ? sanitizeString(input.address) : undefined,
+    city: input.city ? sanitizeString(input.city) : undefined,
+    state: input.state ? sanitizeString(input.state) : undefined,
+    country: input.country ? sanitizeString(input.country) : undefined,
+    postal_code: input.postal_code ? sanitizeString(input.postal_code) : undefined,
+    phone: input.phone ? sanitizeString(input.phone) : undefined
+  };
+};

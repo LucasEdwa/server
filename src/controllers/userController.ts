@@ -180,7 +180,48 @@ export const deleteUser = async (id: number): Promise<void> => {
     throw error;
   }
 };
-
+export const getAllUsers = async (page: number = 1, limit: number = 10): Promise<UserWithDetails[]> => {
+  const offset = (page - 1) * limit;
+  
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        u.id, u.email, u.status, u.verified, u.resettable, u.registered, u.last_login, u.force_logout,
+        ud.first_name, ud.last_name, ud.address, ud.city, ud.state, ud.country, ud.postal_code, ud.phone
+      FROM users u
+      LEFT JOIN user_details ud ON u.id = ud.user_id
+      ORDER BY u.id DESC
+      LIMIT ? OFFSET ?
+    `, [limit, offset]) as any;
+    
+    return rows.map((row: any) => ({
+      id: row.id,
+      email: row.email,
+      password: '',
+      status: row.status,
+      verified: Boolean(row.verified),
+      resettable: Boolean(row.resettable),
+      registered: row.registered,
+      last_login: row.last_login,
+      force_logout: row.force_logout,
+      details: row.first_name ? {
+        id: row.id,
+        user_id: row.id,
+        first_name: row.first_name,
+        last_name: row.last_name,
+        address: row.address,
+        city: row.city,
+        state: row.state,
+        country: row.country,
+        postal_code: row.postal_code,
+        phone: row.phone
+      } : undefined
+    }));
+  } catch (error) {
+    console.error('Error getting all users:', error);
+    throw error;
+  }
+}
 // Force logout user by incrementing force_logout counter
 export const updateForceLogout = async (id: number): Promise<void> => {
   try {

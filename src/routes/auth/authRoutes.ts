@@ -1,9 +1,17 @@
 import { Router, Request, Response } from 'express';
 import * as userController from '../../controllers/userController';
 import { CreateUserInput, LoginInput } from '../../interfaces/User';
-import { generateToken } from '../../utils/auth';
-import { authenticateToken } from '../../middleware/auth';
-import { validateEmail, validatePasswordRegister , validatePasswordLogin,errorResponse, successResponse } from '../../utils/routeHelpers';
+import { authenticateToken,generateToken } from '../../middleware/auth';
+
+import { 
+  validateEmail, 
+  validatePasswordRegister, 
+  validatePasswordLogin,
+  errorResponse, 
+  successResponse,
+  sanitizeEmail,
+  sanitizeUserInput
+} from '../../utils/routeHelpers';
 
 const router = Router();
 
@@ -27,14 +35,8 @@ router.post('/register', async (req: Request, res: Response) => {
       return errorResponse(res, 400, passwordValidation.message!);
     }
 
-    // Sanitize input
-    const sanitizedData: CreateUserInput = {
-      ...req.body,
-      email: email.toLowerCase().trim(),
-      first_name: first_name.trim(),
-      last_name: last_name.trim()
-    };
-
+    // Sanitize input using helper functions
+  const sanitizedData: CreateUserInput = sanitizeUserInput(req.body);
     const existingUser = await userController.getUserByEmail(sanitizedData.email);
     if (existingUser) {
       return errorResponse(res, 409, 'User with this email already exists');
@@ -67,7 +69,7 @@ router.post('/login', async (req: Request, res: Response) => {
       return errorResponse(res, 400, 'Invalid email format');
     }
 
-    const user = await userController.getUserByEmail(email.toLowerCase().trim());
+    const user = await userController.getUserByEmail(sanitizeEmail(email));
     if (!user || !(await validatePasswordLogin(password, user.password))) {
       return errorResponse(res, 401, 'Invalid credentials');
     }
@@ -87,7 +89,7 @@ router.post('/login', async (req: Request, res: Response) => {
     const userWithDetails = await userController.getUserById(user.id);
     const token = generateToken(user);
 
-    // Don't return password
+    // Don't return password. i used _ to ignore it
     const { password: _, ...userResponse } = userWithDetails;
     successResponse(res, 'Login successful', { user: userResponse, token });
   } catch (error) {

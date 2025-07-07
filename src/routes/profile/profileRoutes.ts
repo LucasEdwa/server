@@ -25,18 +25,44 @@ router.get('/me', authenticateToken, async (req: Request, res: Response) => {
     errorResponse(res, 500, 'Internal server error');
   }
 });
+// Get all users with pagination
+router.get('/all', async (req: Request, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    
+    // Validate pagination parameters
+    if (page < 1 || limit < 1 || limit > 100) {
+      return errorResponse(res, 400, 'Invalid pagination parameters. Page must be >= 1, limit must be 1-100');
+    }
+    
+    const users = await userController.getAllUsers(page, limit);
+    const sanitizedUsers = users.map(user => {
+      const { password: _, ...userResponse } = user;
+      return userResponse;
+    });
+    
+    successResponse(res, 'All users retrieved successfully', { 
+      users: sanitizedUsers,
+      pagination: {
+        page,
+        limit,
+        total: sanitizedUsers.length
+      }
+    });
+  } catch (error) {
+    console.error('Get all users error:', error);
+    errorResponse(res, 500, 'Internal server error');
+  }
+});
 
 // Get user profile by ID
-router.get('/:id', authenticateToken, async (req: Request, res: Response) => {
+// This route should come AFTER specific routes like /me and /all
+router.get('/:id', async (req: Request, res: Response) => {
   try {
     const userId = parseInt(req.params.id);
     if (isNaN(userId) || userId <= 0) {
       return errorResponse(res, 400, 'Invalid user ID');
-    }
-
-    // Only allow users to view their own profile or if they're admin
-    if (req.user?.id !== userId && (req.user?.status ?? 0) < 2) {
-      return errorResponse(res, 403, 'Access denied');
     }
 
     const user = await userController.getUserById(userId);

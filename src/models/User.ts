@@ -1,12 +1,4 @@
 import { db } from '../db/connection';
-import { 
-  User, 
-  UserWithDetails, 
-  CreateUserInput, 
-  UpdateUserInput,
-
-} from '../interfaces/User';
-import bcrypt from 'bcrypt';
 // Users main table
 export const createUsersTable = async (): Promise<void> => {
   await db.query(`
